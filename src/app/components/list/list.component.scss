@@ -1,0 +1,20 @@
+.filter-container {
+  display: flex;
+  justify-content: flex-end;
+}
+.table-container {
+  overflow-x: auto;
+}
+.actions {
+  width: 40px;
+}
+.no-data {
+  min-height: 520px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.pointer {
+  cursor: pointer;
+}
