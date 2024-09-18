@@ -9,10 +9,11 @@ import { MatDialog } from '@angular/material/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { debounceTime } from 'rxjs';
-import { PeriodicService } from '../../services/periodic.service';
+import { debounceTime, tap } from 'rxjs';
 import { PeriodicElement } from '../../models/periodic.type';
 import { EditComponent } from '../edit/edit.component';
+import { RxState } from '@rx-angular/state';
+import { GLOBAL_RX_STATE, GlobalState } from '../../states';
 
 @Component({
   selector: 'app-list',
@@ -21,25 +22,28 @@ import { EditComponent } from '../edit/edit.component';
   templateUrl: './list.component.html',
   styleUrl: './list.component.scss'
 })
-export class ListComponent implements OnInit, AfterViewInit {
+export class ListComponent extends RxState<PeriodicElement[]> implements AfterViewInit {
   columns: string[] = ['position', 'name', 'weight', 'symbol', 'action'];
   dataSource = new MatTableDataSource<PeriodicElement>();
   loading: boolean = true;
   filter = new FormControl('');
 
-  private periodicService = inject(PeriodicService);
+  private globalState = inject<RxState<GlobalState>>(GLOBAL_RX_STATE);
   private dialog = inject(MatDialog);
   private destoryRef = inject(DestroyRef);
 
   @ViewChild(MatSort) sort!: MatSort;
 
-  ngOnInit(): void {
-    this.periodicService.getPeriodicElements()
-      .pipe(takeUntilDestroyed(this.destoryRef))
-      .subscribe(s => {
-        this.loading = false;
-        this.dataSource.data = s;
-      });
+  constructor() {
+    super();
+    this.connect(
+      this.globalState
+        .select('elements')
+        .pipe(tap((elements) => {
+          this.dataSource.data = elements;
+          this.loading = false;
+        }))
+    );
 
     this.filter.valueChanges
       .pipe(
